@@ -84,6 +84,8 @@ public abstract class IccRecords extends Handler implements IccConstants {
     protected int mMncLength = UNINITIALIZED;
     protected int mMailboxIndex = 0; // 0 is no mailbox dailing number associated
 
+    protected int mSmsCountOnIcc = -1;
+
     private String mSpn;
     private String mFakeSpn;
 
@@ -771,6 +773,14 @@ public abstract class IccRecords extends Handler implements IccConstants {
         if (DBG) log("getIccSimChallengeResponse: return auth_rsp");
 
         return android.util.Base64.encodeToString(auth_rsp.payload, android.util.Base64.NO_WRAP);
+    }
+
+    /**
+     * To get SMS capacity count on ICC card.
+     */
+    public int getSmsCapacityOnIcc() {
+        if (DBG) log("getSmsCapacityOnIcc: " + mSmsCountOnIcc);
+        return mSmsCountOnIcc;
     }
 
     public void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
