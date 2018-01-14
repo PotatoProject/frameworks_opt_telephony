@@ -455,6 +455,28 @@ public class IccSmsInterfaceManager {
                 null/*messageUri*/, callingPackage, persistMessageForNonDefaultSmsApp);
     }
 
+    public void sendTextWithOptions(String callingPackage, String destAddr, String scAddr,
+            String text, PendingIntent sentIntent, PendingIntent deliveryIntent,
+            boolean persistMessageForNonDefaultSmsApp, int priority, boolean isExpectMore,
+            int validityPeriod) {
+        mPhone.getContext().enforceCallingPermission(
+                Manifest.permission.SEND_SMS,
+                "Sending SMS message");
+        if (Rlog.isLoggable("SMS", Log.VERBOSE)) {
+            log("sendText: destAddr=" + destAddr + " scAddr=" + scAddr +
+                " text='"+ text + "' sentIntent=" +
+                sentIntent + " deliveryIntent=" + deliveryIntent +
+                "validityPeriod" + validityPeriod);
+        }
+        if (mAppOps.noteOp(AppOpsManager.OP_SEND_SMS, Binder.getCallingUid(),
+                callingPackage) != AppOpsManager.MODE_ALLOWED) {
+            return;
+        }
+       // mDispatcher.sendText(destAddr, scAddr, text, sentIntent, deliveryIntent,
+       //         null/*messageUri*/, callingPackage, persistMessageForNonDefaultSmsApp, priority,
+       //         isExpectMore, validityPeriod);
+    }
+
     /**
      * Inject an SMS PDU into the android application framework.
      *
@@ -559,6 +581,113 @@ public class IccSmsInterfaceManager {
                 null/*messageUri*/, callingPackage, persistMessageForNonDefaultSmsApp);
     }
 
+
+    /**
+     * Send a multi-part text based SMS with Messaging Options.
+     *
+     * @param destAddr the address to send the message to
+     * @param scAddr is the service center address or null to use
+     *   the current default SMSC
+     * @param parts an <code>ArrayList</code> of strings that, in order,
+     *   comprise the original message
+     * @param sentIntents if not null, an <code>ArrayList</code> of
+     *   <code>PendingIntent</code>s (one for each message part) that is
+     *   broadcast when the corresponding message part has been sent.
+     *   The result code will be <code>Activity.RESULT_OK<code> for success,
+     *   or one of these errors:
+     *   <code>RESULT_ERROR_GENERIC_FAILURE</code>
+     *   <code>RESULT_ERROR_RADIO_OFF</code>
+     *   <code>RESULT_ERROR_NULL_PDU</code>.
+     *  The per-application based SMS control checks sentIntent. If sentIntent
+     *  is NULL the caller will be checked against all unknown applications,
+     *  which cause smaller number of SMS to be sent in checking period.
+     * @param deliveryIntents if not null, an <code>ArrayList</code> of
+     *   <code>PendingIntent</code>s (one for each message part) that is
+     *   broadcast when the corresponding message part has been delivered
+     *   to the recipient.  The raw pdu of the status report is in the
+     *   extended data ("pdu").
+     * @param persistMessageForNonDefaultSmsApp whether the sent message should
+     *   be automatically persisted in the SMS db. It only affects messages sent
+     *   by a non-default SMS app. Currently only the carrier app can set this
+     *   parameter to false to skip auto message persistence.
+     * @param priority Priority level of the message
+     *  Refer specification See 3GPP2 C.S0015-B, v2.0, table 4.5.9-1
+     *  ---------------------------------
+     *  PRIORITY      | Level of Priority
+     *  ---------------------------------
+     *      '00'      |     Normal
+     *      '01'      |     Interactive
+     *      '10'      |     Urgent
+     *      '11'      |     Emergency
+     *  ----------------------------------
+     *  Any Other values included Negative considered as Invalid Priority Indicator of the message.
+     * @param isExpectMore is a boolean to indicate the sending message is multi segmented or not.
+     * @param validityPeriod Validity Period of the message in mins.
+     *  Refer specification 3GPP TS 23.040 V6.8.1 section 9.2.3.12.1.
+     *  Validity Period(Minimum) -> 5 mins
+     *  Validity Period(Maximum) -> 635040 mins(i.e.63 weeks).
+     *  Any Other values included Negative considered as Invalid Validity Period of the message.
+     */
+
+    public void sendMultipartTextWithOptions(String callingPackage, String destAddr,
+            String scAddr, List<String> parts, List<PendingIntent> sentIntents,
+            List<PendingIntent> deliveryIntents, boolean persistMessageForNonDefaultSmsApp,
+            int priority, boolean isExpectMore, int validityPeriod) {
+        mPhone.getContext().enforceCallingPermission(
+                Manifest.permission.SEND_SMS,
+                "Sending SMS message");
+        if (Rlog.isLoggable("SMS", Log.VERBOSE)) {
+            int i = 0;
+            for (String part : parts) {
+                log("sendMultipartTextWithOptions: destAddr=" + destAddr + ", srAddr=" + scAddr +
+                        ", part[" + (i++) + "]=" + part);
+            }
+        }
+        if (mAppOps.noteOp(AppOpsManager.OP_SEND_SMS, Binder.getCallingUid(),
+                callingPackage) != AppOpsManager.MODE_ALLOWED) {
+            return;
+        }
+
+        destAddr = filterDestAddress(destAddr);
+
+        if (parts.size() > 1 && parts.size() < 10 && !SmsMessage.hasEmsSupport()) {
+            for (int i = 0; i < parts.size(); i++) {
+                // If EMS is not supported, we have to break down EMS into single segment SMS
+                // and add page info " x/y".
+                String singlePart = parts.get(i);
+                if (SmsMessage.shouldAppendPageNumberAsPrefix()) {
+                    singlePart = String.valueOf(i + 1) + '/' + parts.size() + ' ' + singlePart;
+                } else {
+                    singlePart = singlePart.concat(' ' + String.valueOf(i + 1) + '/' + parts.size());
+                }
+
+                PendingIntent singleSentIntent = null;
+                if (sentIntents != null && sentIntents.size() > i) {
+                    singleSentIntent = sentIntents.get(i);
+                }
+
+                PendingIntent singleDeliveryIntent = null;
+                if (deliveryIntents != null && deliveryIntents.size() > i) {
+                    singleDeliveryIntent = deliveryIntents.get(i);
+                }
+
+                //mDispatcher.sendText(destAddr, scAddr, singlePart,
+                //        singleSentIntent, singleDeliveryIntent,
+                //        null/*messageUri*/, callingPackage,
+                //        persistMessageForNonDefaultSmsApp,
+                //        priority, isExpectMore, validityPeriod);
+            }
+            return;
+        }
+
+        //mDispatcher.sendMultipartText(destAddr,
+        //                              scAddr,
+        //                              (ArrayList<String>) parts,
+        //                              (ArrayList<PendingIntent>) sentIntents,
+        //                              (ArrayList<PendingIntent>) deliveryIntents,
+        //                              null, callingPackage, persistMessageForNonDefaultSmsApp,
+        //                              priority, isExpectMore, validityPeriod);
+    }
 
     public int getPremiumSmsPermission(String packageName) {
         return mDispatcher.getPremiumSmsPermission(packageName);
@@ -1153,5 +1282,4 @@ public class IccSmsInterfaceManager {
         result = SmsNumberUtils.filterDestAddr(mPhone, destAddr);
         return result != null ? result : destAddr;
     }
-
 }
