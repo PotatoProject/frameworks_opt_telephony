@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "efa1e6db_8033aa70",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000244
+      },
+      "writtenOn": "2021-11-30T18:52:53Z",
+      "side": 1,
+      "message": "Tested and Outgoing SMS working fine on 4G VoLTE enabled carrier.",
+      "revId": "da7cbb916bdd85fdf062d0fe76e5b356a2f1dddd",
+      "serverId": "8720d348-3d66-43e6-b480-1d69039ac554"
+    }
+  ]
+}
