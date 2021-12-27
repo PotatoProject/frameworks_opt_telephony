@@ -16,6 +16,23 @@
       "message": "Tested and Outgoing SMS working fine on 4G VoLTE enabled carrier.",
       "revId": "da7cbb916bdd85fdf062d0fe76e5b356a2f1dddd",
       "serverId": "8720d348-3d66-43e6-b480-1d69039ac554"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "102a92ec_0ac50eaf",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000165
+      },
+      "writtenOn": "2021-12-27T04:03:11Z",
+      "side": 1,
+      "message": "This could potentially break for devices that are compiled against new telephony",
+      "revId": "da7cbb916bdd85fdf062d0fe76e5b356a2f1dddd",
+      "serverId": "8720d348-3d66-43e6-b480-1d69039ac554"
     }
   ]
 }
